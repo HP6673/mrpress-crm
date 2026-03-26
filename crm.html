@@ -1,0 +1,1152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MrPress CRM</title>
+<script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0d0f14;--bg2:#13161d;--bg3:#1a1e28;--bg4:#222736;
+  --border:#2a2f3e;--border2:#333a4d;
+  --text:#e8eaf0;--text2:#8b90a0;--text3:#555c70;
+  --accent:#6c8bef;--accent2:#4a6be8;--accent-glow:rgba(108,139,239,0.15);
+  --green:#3ecf8e;--red:#f87171;--amber:#fbbf24;--purple:#a78bfa;
+  --radius:10px;--radius-lg:16px;
+}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;min-height:100vh;overflow-x:hidden}
+input,textarea,select{background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:var(--radius);padding:9px 12px;font-family:inherit;font-size:14px;width:100%;outline:none;transition:.15s}
+input:focus,textarea:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow)}
+button{cursor:pointer;border:none;border-radius:var(--radius);font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;transition:.15s}
+.btn-primary{background:var(--accent);color:#fff;padding:9px 18px}
+.btn-primary:hover{background:var(--accent2)}
+.btn-ghost{background:transparent;color:var(--text2);padding:9px 14px;border:1px solid var(--border)}
+.btn-ghost:hover{border-color:var(--border2);color:var(--text)}
+.btn-danger{background:rgba(248,113,113,0.15);color:var(--red);padding:7px 14px;border:1px solid rgba(248,113,113,0.3)}
+.btn-danger:hover{background:rgba(248,113,113,0.25)}
+.btn-sm{padding:5px 12px;font-size:13px}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px}
+.badge{display:inline-flex;align-items:center;padding:2px 9px;border-radius:20px;font-size:12px;font-weight:500}
+.badge-green{background:rgba(62,207,142,0.12);color:var(--green);border:1px solid rgba(62,207,142,0.2)}
+.badge-amber{background:rgba(251,191,36,0.12);color:var(--amber);border:1px solid rgba(251,191,36,0.2)}
+.badge-red{background:rgba(248,113,113,0.12);color:var(--red);border:1px solid rgba(248,113,113,0.2)}
+.badge-purple{background:rgba(167,139,250,0.12);color:var(--purple);border:1px solid rgba(167,139,250,0.2)}
+.badge-blue{background:rgba(108,139,239,0.12);color:var(--accent);border:1px solid rgba(108,139,239,0.2)}
+.tag{display:inline-flex;align-items:center;gap:4px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:2px 8px;font-size:12px;color:var(--text2)}
+label{display:block;font-size:13px;font-weight:500;color:var(--text2);margin-bottom:5px}
+.form-group{margin-bottom:14px}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:1000;padding:20px;backdrop-filter:blur(4px)}
+.modal{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius-lg);padding:28px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto}
+.modal-title{font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:600;margin-bottom:20px}
+.modal-footer{display:flex;gap:10px;justify-content:flex-end;margin-top:20px;padding-top:16px;border-top:1px solid var(--border)}
+.sidebar{width:220px;min-width:220px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;height:100vh;position:sticky;top:0}
+.sidebar-logo{padding:20px 18px 16px;border-bottom:1px solid var(--border)}
+.sidebar-logo span{font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:600;color:var(--text)}
+.sidebar-logo span em{color:var(--accent);font-style:normal}
+.company-switcher{padding:10px 12px;margin:10px 10px 4px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);cursor:pointer;transition:.15s}
+.company-switcher:hover{border-color:var(--border2)}
+.company-name{font-size:13px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.company-label{font-size:11px;color:var(--text3);margin-bottom:2px}
+.nav-section{padding:6px 10px 2px}
+.nav-section-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text3);padding:0 8px 4px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;cursor:pointer;color:var(--text2);font-size:14px;transition:.12s;margin:1px 0}
+.nav-item:hover{background:var(--bg3);color:var(--text)}
+.nav-item.active{background:var(--accent-glow);color:var(--accent)}
+.nav-icon{width:18px;height:18px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px}
+.nav-count{margin-left:auto;background:var(--bg3);border:1px solid var(--border);border-radius:20px;padding:1px 7px;font-size:11px;color:var(--text3)}
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.topbar{height:56px;border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:12px;background:var(--bg2)}
+.page-title{font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:600}
+.topbar-actions{margin-left:auto;display:flex;gap:8px;align-items:center}
+.content{flex:1;overflow-y:auto;padding:24px}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px}
+.stat-val{font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:600;color:var(--text);margin:4px 0}
+.stat-label{font-size:12px;color:var(--text3);font-weight:500;text-transform:uppercase;letter-spacing:.05em}
+.stat-change{font-size:12px;margin-top:4px}
+.stat-change.up{color:var(--green)}
+.stat-change.down{color:var(--red)}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;padding:10px 14px;font-size:12px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--border)}
+td{padding:12px 14px;border-bottom:1px solid var(--border);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(255,255,255,0.02)}
+.table-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden}
+.avatar{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;flex-shrink:0}
+.pipeline-col{display:flex;flex-direction:column;gap:8px;min-width:200px;max-width:220px}
+.pipeline-header{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:10px 14px;font-size:13px;font-weight:600;display:flex;justify-content:space-between;align-items:center}
+.deal-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:12px;cursor:pointer;transition:.12s}
+.deal-card:hover{border-color:var(--border2);transform:translateY(-1px)}
+.deal-title{font-weight:500;margin-bottom:6px;font-size:14px}
+.deal-meta{font-size:12px;color:var(--text2);display:flex;gap:8px}
+.pipeline-board{display:flex;gap:16px;overflow-x:auto;padding-bottom:8px}
+.empty-state{text-align:center;padding:60px 20px;color:var(--text3)}
+.empty-state .icon{font-size:32px;margin-bottom:12px}
+.empty-state p{font-size:14px;margin-top:6px}
+.search-bar{display:flex;align-items:center;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:0 12px;gap:8px;width:280px}
+.search-bar input{border:none;background:transparent;padding:8px 0;width:100%}
+.loading{display:flex;align-items:center;justify-content:center;height:100%;color:var(--text3);gap:10px}
+.spinner{width:18px;height:18px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.login-page{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg);padding:20px}
+.login-box{background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:40px;width:100%;max-width:420px}
+.login-logo{text-align:center;margin-bottom:32px}
+.login-logo h1{font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:600}
+.login-logo h1 em{color:var(--accent);font-style:normal}
+.login-logo p{color:var(--text3);font-size:14px;margin-top:6px}
+.tab-bar{display:flex;background:var(--bg3);border-radius:var(--radius);padding:3px;gap:3px;margin-bottom:20px}
+.tab{flex:1;padding:8px;text-align:center;border-radius:7px;cursor:pointer;font-size:14px;font-weight:500;color:var(--text2);transition:.12s}
+.tab.active{background:var(--bg2);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,0.3)}
+.hint{font-size:12px;color:var(--text3);margin-top:6px;line-height:1.5}
+.activity-item{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)}
+.activity-item:last-child{border-bottom:none}
+.activity-dot{width:8px;height:8px;border-radius:50%;margin-top:5px;flex-shrink:0}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.detail-field{background:var(--bg3);border-radius:var(--radius);padding:12px}
+.detail-field .field-label{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
+.detail-field .field-value{font-size:14px;color:var(--text);font-weight:500}
+.sync-bar{padding:8px 18px;font-size:12px;display:flex;align-items:center;gap:8px;background:rgba(108,139,239,0.08);border-top:1px solid var(--border)}
+.company-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px;cursor:pointer;transition:.15s}
+.company-card:hover{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.alert{border-radius:var(--radius);padding:10px 14px;font-size:13px;margin-bottom:12px}
+.alert-info{background:rgba(108,139,239,0.1);border:1px solid rgba(108,139,239,0.2);color:var(--accent)}
+.alert-error{background:rgba(248,113,113,0.1);border:1px solid rgba(248,113,113,0.2);color:var(--red)}
+.divider{height:1px;background:var(--border);margin:16px 0}
+.copyright{text-align:center;padding:10px 18px;font-size:11px;color:var(--text3);border-top:1px solid var(--border);background:var(--bg2)}
+@media(max-width:768px){.sidebar{display:none}.grid-4,.grid-3,.grid-2{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const {useState,useEffect,useRef,useCallback}=React;
+
+// ── CRYPTO ──────────────────────────────────────────────────────────────────
+async function deriveKey(password,salt){
+  const enc=new TextEncoder();
+  const km=await crypto.subtle.importKey('raw',enc.encode(password),{name:'PBKDF2'},false,['deriveKey']);
+  return crypto.subtle.deriveKey({name:'PBKDF2',salt:enc.encode(salt),iterations:100000,hash:'SHA-256'},km,{name:'AES-GCM',length:256},false,['encrypt','decrypt']);
+}
+async function encryptData(data,password){
+  const key=await deriveKey(password,'vaultcrm-salt-v1');
+  const iv=crypto.getRandomValues(new Uint8Array(12));
+  const enc=new TextEncoder();
+  const ct=await crypto.subtle.encrypt({name:'AES-GCM',iv},key,enc.encode(JSON.stringify(data)));
+  const combined=new Uint8Array(iv.length+ct.byteLength);
+  combined.set(iv);combined.set(new Uint8Array(ct),iv.length);
+  return btoa(String.fromCharCode(...combined));
+}
+async function decryptData(b64,password){
+  const bytes=Uint8Array.from(atob(b64),c=>c.charCodeAt(0));
+  const iv=bytes.slice(0,12);const ct=bytes.slice(12);
+  const key=await deriveKey(password,'vaultcrm-salt-v1');
+  const pt=await crypto.subtle.decrypt({name:'AES-GCM',iv},key,ct);
+  return JSON.parse(new TextDecoder().decode(pt));
+}
+
+// ── GITHUB API ───────────────────────────────────────────────────────────────
+async function ghRequest(token,method,path,body){
+  const r=await fetch(`https://api.github.com${path}`,{method,headers:{'Authorization':`token ${token}`,'Content-Type':'application/json','Accept':'application/vnd.github.v3+json'},body:body?JSON.stringify(body):undefined});
+  if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.message||`GitHub error ${r.status}`)}
+  return r.status===204?null:r.json();
+}
+async function getFile(token,owner,repo,path){
+  try{return await ghRequest(token,'GET',`/repos/${owner}/${repo}/contents/${path}`)}
+  catch(e){if(e.message.includes('404')||e.message.includes('Not Found'))return null;throw e}
+}
+async function putFile(token,owner,repo,path,content,sha){
+  return ghRequest(token,'PUT',`/repos/${owner}/${repo}/contents/${path}`,{message:`MrPress CRM update ${new Date().toISOString()}`,content:btoa(unescape(encodeURIComponent(content))),sha:sha||undefined});
+}
+// ── AUTH HELPERS ─────────────────────────────────────────────────────────────
+// auth.enc stores: { users: [{username, passwordHash, token, owner, repo, encPassword}] }
+// The file itself is encrypted with AUTH_MASTER derived from username+password
+async function hashPassword(password){
+  const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode('mrpress-pw-v1:'+password));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+async function authFileKey(username,password){
+  // Key for the auth.enc file is derived from username+password combo
+  return deriveKey(username+':'+password,'mrpress-auth-salt-v1');
+}
+async function encryptAuth(data,username,password){
+  const key=await authFileKey(username,password);
+  const iv=crypto.getRandomValues(new Uint8Array(12));
+  const ct=await crypto.subtle.encrypt({name:'AES-GCM',iv},key,new TextEncoder().encode(JSON.stringify(data)));
+  const combined=new Uint8Array(iv.length+ct.byteLength);
+  combined.set(iv);combined.set(new Uint8Array(ct),iv.length);
+  return btoa(String.fromCharCode(...combined));
+}
+async function decryptAuth(b64,username,password){
+  const bytes=Uint8Array.from(atob(b64),c=>c.charCodeAt(0));
+  const key=await authFileKey(username,password);
+  const pt=await crypto.subtle.decrypt({name:'AES-GCM',iv:bytes.slice(0,12)},key,bytes.slice(12));
+  return JSON.parse(new TextDecoder().decode(pt));
+}
+// Load auth registry — needs the ADMIN token+owner+repo on first setup only
+async function loadAuthFile(token,owner,repo){
+  const f=await getFile(token,owner,repo,'auth.enc');
+  return f?{raw:decodeURIComponent(escape(atob(f.content.replace(/\n/g,'')))),sha:f.sha}:null;
+}
+async function saveAuthFile(token,owner,repo,data,sha,adminUser,adminPass){
+  const enc=await encryptAuth(data,adminUser,adminPass);
+  return putFile(token,owner,repo,'auth.enc',enc,sha);
+}
+
+async function loadCRM(token,owner,repo,company,password){
+  const f=await getFile(token,owner,repo,`crm_data/${company}.enc`);
+  if(!f)return null;
+  const raw=decodeURIComponent(escape(atob(f.content.replace(/\n/g,''))));
+  return{data:await decryptData(raw,password),sha:f.sha};
+}
+async function saveCRM(token,owner,repo,company,password,data,sha){
+  const enc=await encryptData(data,password);
+  return putFile(token,owner,repo,`crm_data/${company}.enc`,enc,sha);
+}
+async function listCompanies(token,owner,repo){
+  try{
+    const files=await ghRequest(token,'GET',`/repos/${owner}/${repo}/contents/crm_data`);
+    return files.filter(f=>f.name.endsWith('.enc')).map(f=>f.name.replace('.enc',''));
+  }catch{return[]}
+}
+
+// ── DEFAULT DATA ─────────────────────────────────────────────────────────────
+function defaultData(name){
+  return{
+    contacts:[],deals:[],companies:[],tasks:[],activities:[],notes:[],
+    settings:{companyName:name,currency:'USD'},
+    meta:{created:Date.now()}
+  };
+}
+
+// ── HELPERS ───────────────────────────────────────────────────────────────────
+const uid=()=>Math.random().toString(36).slice(2,10);
+const fmtDate=d=>d?new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'—';
+const fmtMoney=v=>v?`$${Number(v).toLocaleString()}`:'—';
+const STAGES=['Lead','Qualified','Proposal','Negotiation','Closed Won','Closed Lost'];
+const STAGE_COLORS={Lead:'blue',Qualified:'purple',Proposal:'amber',Negotiation:'amber','Closed Won':'green','Closed Lost':'red'};
+const COLORS=['#6c8bef','#3ecf8e','#fbbf24','#a78bfa','#f87171','#38bdf8','#fb923c','#e879f9'];
+function initials(name){return(name||'?').split(' ').map(w=>w[0]||'').join('').toUpperCase().slice(0,2)}
+function avatarBg(name){return COLORS[(name||'').charCodeAt(0)%COLORS.length]}
+
+// ── ICONS (SVG inline) ────────────────────────────────────────────────────────
+const I={
+  dash:'📊',contacts:'👥',deals:'💼',tasks:'✅',companies:'🏢',activities:'📋',
+  settings:'⚙️',logout:'🚪',plus:'＋',search:'🔍',sync:'🔄',edit:'✏️',
+  del:'🗑',close:'✕',check:'✓',phone:'📞',email:'📧',note:'📝',meet:'📅',
+};
+
+// ── APP ───────────────────────────────────────────────────────────────────────
+function App(){
+  const[session,setSession]=useState(()=>{try{const s=localStorage.getItem('vc_session');return s?JSON.parse(s):null}catch{return null}});
+  const[company,setCompany]=useState(null);
+  const[data,setData]=useState(null);
+  const[dataSha,setDataSha]=useState(null);
+  const[syncing,setSyncing]=useState(false);
+  const[syncMsg,setSyncMsg]=useState('');
+  const[view,setView]=useState('dashboard');
+  const[companyList,setCompanyList]=useState([]);
+
+  const saveSession=s=>{localStorage.setItem('vc_session',JSON.stringify(s));setSession(s)};
+  const clearSession=()=>{localStorage.removeItem('vc_session');setSession(null);setCompany(null);setData(null)};
+
+  const sync=useCallback(async(d,sha)=>{
+    if(!session||!company)return;
+    setSyncing(true);setSyncMsg('Saving…');
+    try{
+      const res=await saveCRM(session.token,session.owner,session.repo,company,session.password,d||data,sha||dataSha);
+      setDataSha(res.content.sha);
+      setSyncMsg(`Saved ${new Date().toLocaleTimeString()}`);
+    }catch(e){setSyncMsg('⚠ Save failed: '+e.message)}
+    setSyncing(false);
+  },[session,company,data,dataSha]);
+
+  const update=useCallback(async(fn)=>{
+    setData(prev=>{
+      const next={...prev};fn(next);
+      sync(next,dataSha);
+      return next;
+    });
+  },[sync,dataSha]);
+
+  useEffect(()=>{
+    if(session&&!company){
+      listCompanies(session.token,session.owner,session.repo).then(setCompanyList).catch(()=>{});
+    }
+  },[session,company]);
+
+  const selectCompany=async(slug)=>{
+    setSyncing(true);setSyncMsg('Loading…');
+    try{
+      const res=await loadCRM(session.token,session.owner,session.repo,slug,session.password);
+      if(res){setData(res.data);setDataSha(res.sha);}
+      else{const d=defaultData(slug);setData(d);setDataSha(null);await sync(d,null);}
+      setCompany(slug);setView('dashboard');
+      setCompanyList(l=>[...new Set([...l,slug])]);
+    }catch(e){setSyncMsg('Error: '+e.message)}
+    setSyncing(false);
+  };
+
+  if(!session)return<LoginPage onLogin={saveSession}/>;
+  if(!company)return<CompanySelector session={session} list={companyList} onSelect={selectCompany} onLogout={clearSession} syncing={syncing} syncMsg={syncMsg}/>;
+  if(!data)return<div className="loading"><div className="spinner"/><span>Loading data…</span></div>;
+
+  return(
+    <div style={{display:'flex',height:'100vh',overflow:'hidden'}}>
+      <Sidebar view={view} setView={setView} data={data} company={company} session={session}
+        onSwitchCompany={()=>{setCompany(null);setData(null)}} onLogout={clearSession}/>
+      <div className="main">
+        <div className="topbar">
+          <span className="page-title">{viewTitle(view)}</span>
+          <div className="topbar-actions">
+            <span style={{fontSize:12,color:'var(--text3)'}}>👤 {session.username||session.owner}</span>
+          </div>
+        </div>
+        <div className="content">
+          <Views view={view} data={data} update={update}/>
+        </div>
+        <div className="sync-bar">
+          {syncing&&<div className="spinner" style={{width:12,height:12,borderWidth:1.5}}/>}
+          <span style={{color:'var(--text3)'}}>{syncMsg||'All changes saved to GitHub'}</span>
+        </div>
+        <div className="copyright">© {new Date().getFullYear()} MrPress LLC. All rights reserved.</div>
+      </div>
+    </div>
+  );
+}
+
+function viewTitle(v){return{dashboard:'Dashboard',contacts:'Contacts',deals:'Pipeline',tasks:'Tasks',companies:'Accounts',activities:'Activity Log',settings:'Settings'}[v]||v}
+
+// ── LOGIN ─────────────────────────────────────────────────────────────────────
+// tab: 'login' | 'setup'
+// Setup flow: enter GitHub details + create admin username/password → saves auth.enc
+// Login flow: enter username + password → fetches auth.enc → decrypts → gets token
+function LoginPage({onLogin}){
+  const[tab,setTab]=useState('login');
+  const[step,setStep]=useState(1); // setup has 2 steps
+  const[error,setError]=useState('');
+  const[loading,setLoading]=useState(false);
+  const[loadingMsg,setLoadingMsg]=useState('');
+
+  // Login form — pre-fill owner/repo from last bootstrap if available
+  const bootstrap=React.useMemo(()=>{try{return JSON.parse(localStorage.getItem('mrpress_bootstrap')||'null')}catch{return null}},[]);
+  const[loginForm,setLoginForm]=useState({username:'',password:'',owner:bootstrap?.owner||'',repo:bootstrap?.repo||''});
+  const setL=k=>e=>setLoginForm(f=>({...f,[k]:e.target.value}));
+
+  // Setup form
+  const[setupForm,setSetupForm]=useState({token:'',owner:'',repo:'',username:'',password:'',password2:'',encPassword:''});
+  const setS=k=>e=>setSetupForm(f=>({...f,[k]:e.target.value}));
+
+  const doLogin=async()=>{
+    const{username,password,owner,repo}=loginForm;
+    if(!username||!password||!owner||!repo){setError('All fields are required');return}
+    setLoading(true);setLoadingMsg('Fetching credentials…');setError('');
+    try{
+      // We need a way to fetch auth.enc without a token — use unauthenticated GitHub contents API
+      // (works for private repos only if we have a token — so we prompt for owner/repo and fetch with no auth first)
+      // Since repo is private, we need the token. Strategy: store a public "bootstrap" token with read-only scope,
+      // OR ask user for owner/repo and derive a lookup token from username/password (not possible).
+      // Best approach for private repo: fetch auth.enc using a minimal "read token" stored in the URL hash or
+      // ask user for owner+repo and use their password to derive the auth key, then try fetching with no token
+      // using GitHub's raw URL — but private repos block unauthenticated access.
+      // SOLUTION: We store owner/repo in the login form (one-time, can be bookmarked),
+      // and the auth.enc is fetched using a PUBLIC read-only token embedded at setup time,
+      // OR we embed the owner/repo in the page URL hash for convenience.
+      // SIMPLEST: store owner+repo+a read-only bootstrap token in auth.enc's FILENAME as a public marker,
+      // but keep token encrypted. Instead: store a HASHED version of the token encrypted per-user.
+      // ACTUAL SIMPLEST: at login, we have owner+repo. We try the GitHub unauthenticated raw API.
+      // For private repos this fails. So we need SOMETHING. 
+      // Clean solution: store owner/repo/token salted-hash in localStorage from last setup,
+      // AND encrypt full token in auth.enc. At login: 
+      // 1) get bootstrap info from localStorage (owner/repo/readToken)
+      // 2) fetch auth.enc with readToken
+      // 3) decrypt user record with username+password → get their full token + encPassword
+      const bootstrap=JSON.parse(localStorage.getItem('mrpress_bootstrap')||'null');
+      if(!bootstrap||bootstrap.owner!==owner||bootstrap.repo!==repo){
+        setError('No setup found for this repo on this device. Please run First Time Setup first, or sign in on the device where you ran setup.');
+        setLoading(false);return;
+      }
+      setLoadingMsg('Decrypting credentials…');
+      const authFile=await loadAuthFile(bootstrap.readToken,owner,repo);
+      if(!authFile){setError('No auth file found. Please run First Time Setup.');setLoading(false);return;}
+      let authData;
+      try{authData=await decryptAuth(authFile.raw,username,password);}
+      catch{setError('Incorrect username or password.');setLoading(false);return;}
+      const user=authData.users?.find(u=>u.username===username);
+      if(!user){setError('User not found.');setLoading(false);return;}
+      const pwHash=await hashPassword(password);
+      if(user.passwordHash!==pwHash){setError('Incorrect password.');setLoading(false);return;}
+      setLoadingMsg('Signing in…');
+      onLogin({token:user.token,owner,repo,password:user.encPassword,username});
+    }catch(e){setError(e.message)}
+    setLoading(false);
+  };
+
+  const doSetupStep1=async()=>{
+    const{token,owner,repo,username,password,password2,encPassword}=setupForm;
+    if(!token||!owner||!repo||!username||!password||!password2||!encPassword){setError('All fields are required');return}
+    if(password!==password2){setError('Passwords do not match');return}
+    if(password.length<6){setError('Login password must be at least 6 characters');return}
+    if(encPassword.length<8){setError('Encryption password must be at least 8 characters');return}
+    setLoading(true);setLoadingMsg('Connecting to GitHub…');setError('');
+    try{
+      await ghRequest(token,'GET',`/repos/${owner}/${repo}`);
+      setLoadingMsg('Initialising repo…');
+      // GitHub requires at least one commit before the contents API works.
+      // Create a README if the repo is empty, then create crm_data folder.
+      const readme=await getFile(token,owner,repo,'README.md');
+      if(!readme){
+        await putFile(token,owner,repo,'README.md','# MrPress CRM Data\n\nPrivate encrypted CRM data. Do not edit manually.',null);
+      }
+      const gitkeep=await getFile(token,owner,repo,'crm_data/.gitkeep');
+      if(!gitkeep)await putFile(token,owner,repo,'crm_data/.gitkeep','',null).catch(()=>{});
+      setLoadingMsg('Creating your account…');
+      const pwHash=await hashPassword(password);
+      const authData={users:[{username,passwordHash:pwHash,token,encPassword}]};
+      // Check if auth.enc already exists and warn rather than silently overwrite
+      const existingAuth=await loadAuthFile(token,owner,repo);
+      if(existingAuth){
+        setError('An account already exists in this repo. Use Sign In instead, or contact your admin to add a new user.');
+        setLoading(false);return;
+      }
+      localStorage.setItem('mrpress_bootstrap',JSON.stringify({owner,repo,readToken:token}));
+      await saveAuthFile(token,owner,repo,authData,null,username,password);
+      setLoadingMsg('Done! Signing in…');
+      onLogin({token,owner,repo,password:encPassword,username});
+    }catch(e){setError(e.message||'Something went wrong. Check your token and repo name.')}
+    setLoading(false);
+  };
+
+  return(
+    <div className="login-page">
+      <div className="login-box">
+        <div className="login-logo">
+          <h1>MrPress <em>CRM</em></h1>
+          <p>Your data, encrypted, free forever</p>
+          <p style={{fontSize:11,color:'var(--text3)',marginTop:4}}>© {new Date().getFullYear()} MrPress LLC</p>
+        </div>
+        <div className="tab-bar">
+          <div className={`tab${tab==='login'?' active':''}`} onClick={()=>{setTab('login');setError('');setStep(1)}}>Sign In</div>
+          <div className={`tab${tab==='setup'?' active':''}`} onClick={()=>{setTab('setup');setError('');setStep(1)}}>First Time Setup</div>
+        </div>
+        {error&&<div className="alert alert-error">{error}</div>}
+
+        {tab==='login'&&(
+          <>
+            <div className="alert alert-info" style={{marginBottom:14}}>
+              Sign in with the username and password you created during setup.
+            </div>
+            <div className="form-group">
+              <label>GitHub Username (repo owner)</label>
+              <input placeholder="yourusername" value={loginForm.owner} onChange={setL('owner')} onKeyDown={e=>e.key==='Enter'&&doLogin()}/>
+            </div>
+            <div className="form-group">
+              <label>Repository Name</label>
+              <input placeholder="my-crm-data" value={loginForm.repo} onChange={setL('repo')} onKeyDown={e=>e.key==='Enter'&&doLogin()}/>
+              <div className="hint">Only needed the first time on a new device — the app remembers it after that.</div>
+            </div>
+            <div className="form-group">
+              <label>Username</label>
+              <input placeholder="your CRM username" value={loginForm.username} onChange={setL('username')} onKeyDown={e=>e.key==='Enter'&&doLogin()}/>
+            </div>
+            <div className="form-group">
+              <label>Password</label>
+              <input type="password" placeholder="your CRM password" value={loginForm.password} onChange={setL('password')} onKeyDown={e=>e.key==='Enter'&&doLogin()}/>
+            </div>
+            <button className="btn-primary" style={{width:'100%',padding:11}} onClick={doLogin} disabled={loading}>
+              {loading?<span>{loadingMsg||'Signing in…'}</span>:'Sign In'}
+            </button>
+          </>
+        )}
+
+        {tab==='setup'&&(
+          <>
+            <div className="alert alert-info">One-time setup — fill this in once and you'll only need username + password from now on.</div>
+            <div style={{fontSize:13,fontWeight:600,color:'var(--text2)',margin:'4px 0 10px'}}>GitHub Connection</div>
+            <div className="form-group">
+              <label>GitHub Personal Access Token</label>
+              <input type="password" placeholder="ghp_…" value={setupForm.token} onChange={setS('token')}/>
+              <div className="hint">GitHub → Settings → Developer settings → Personal access tokens → Generate new token (check the <strong>repo</strong> scope)</div>
+            </div>
+            <div className="grid-2">
+              <div className="form-group">
+                <label>Your GitHub Username</label>
+                <input placeholder="yourusername" value={setupForm.owner} onChange={setS('owner')}/>
+              </div>
+              <div className="form-group">
+                <label>Repo Name</label>
+                <input placeholder="my-crm-data" value={setupForm.repo} onChange={setS('repo')}/>
+              </div>
+            </div>
+            <div className="divider"/>
+            <div style={{fontSize:13,fontWeight:600,color:'var(--text2)',margin:'4px 0 10px'}}>Create Your Login</div>
+            <div className="grid-2">
+              <div className="form-group" style={{gridColumn:'1/-1'}}>
+                <label>Choose a Username</label>
+                <input placeholder="e.g. admin" value={setupForm.username} onChange={setS('username')}/>
+              </div>
+              <div className="form-group">
+                <label>Login Password</label>
+                <input type="password" placeholder="Used to sign in" value={setupForm.password} onChange={setS('password')}/>
+              </div>
+              <div className="form-group">
+                <label>Confirm Password</label>
+                <input type="password" placeholder="Repeat password" value={setupForm.password2} onChange={setS('password2')}/>
+              </div>
+            </div>
+            <div className="divider"/>
+            <div style={{fontSize:13,fontWeight:600,color:'var(--text2)',margin:'4px 0 10px'}}>Data Encryption</div>
+            <div className="form-group">
+              <label>Encryption Password</label>
+              <input type="password" placeholder="Strong password to encrypt your CRM data" value={setupForm.encPassword} onChange={setS('encPassword')}/>
+              <div className="hint">⚠ Separate from your login password. Encrypts all your CRM data — if lost, data <strong>cannot</strong> be recovered. Write it down somewhere safe.</div>
+            </div>
+            <button className="btn-primary" style={{width:'100%',padding:11}} onClick={doSetupStep1} disabled={loading}>
+              {loading?loadingMsg:'Create Account & Sign In'}
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── COMPANY SELECTOR ──────────────────────────────────────────────────────────
+function CompanySelector({session,list,onSelect,onLogout,syncing,syncMsg}){
+  const[newSlug,setNewSlug]=useState('');
+  const[creating,setCreating]=useState(false);
+  const[error,setError]=useState('');
+
+  const create=async()=>{
+    const slug=newSlug.trim().toLowerCase().replace(/[^a-z0-9_-]/g,'_');
+    if(!slug){setError('Enter a company ID');return}
+    setCreating(true);setError('');
+    try{await onSelect(slug)}catch(e){setError(e.message)}
+    setCreating(false);
+  };
+
+  return(
+    <div style={{minHeight:'100vh',background:'var(--bg)',display:'flex',alignItems:'center',justifyContent:'center',padding:20}}>
+      <div style={{width:'100%',maxWidth:520}}>
+        <div style={{textAlign:'center',marginBottom:32}}>
+          <h1 style={{fontFamily:'Space Grotesk',fontSize:24,fontWeight:600}}>Select Company</h1>
+          <p style={{color:'var(--text3)',marginTop:6}}>Signed in as <strong style={{color:'var(--text2)'}}>{session.username||session.owner}</strong></p>
+        </div>
+        {error&&<div className="alert alert-error">{error}</div>}
+        {list.length>0&&(
+          <>
+            <div style={{marginBottom:16,fontSize:13,color:'var(--text3)'}}>YOUR COMPANIES</div>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12,marginBottom:24}}>
+              {list.map(c=>(
+                <div key={c} className="company-card" onClick={()=>onSelect(c)}>
+                  <div style={{width:40,height:40,borderRadius:10,background:avatarBg(c),display:'flex',alignItems:'center',justifyContent:'center',fontSize:16,fontWeight:700,color:'#fff',marginBottom:10}}>{initials(c)}</div>
+                  <div style={{fontWeight:600,fontSize:15}}>{c}</div>
+                  <div style={{fontSize:12,color:'var(--text3)',marginTop:2}}>Click to open</div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+        <div className="card">
+          <div style={{fontWeight:600,marginBottom:12}}>Create or open a company workspace</div>
+          <div className="form-group" style={{marginBottom:10}}>
+            <label>Company ID (letters, numbers, hyphens)</label>
+            <input placeholder="e.g. acme-corp" value={newSlug} onChange={e=>setNewSlug(e.target.value)} onKeyDown={e=>e.key==='Enter'&&create()}/>
+            <div className="hint">Each company gets its own encrypted database in your repo.</div>
+          </div>
+          <button className="btn-primary" style={{width:'100%'}} onClick={create} disabled={creating||syncing}>
+            {creating||syncing?'Loading…':'Open / Create Workspace'}
+          </button>
+        </div>
+        <div style={{textAlign:'center',marginTop:20}}>
+          <button className="btn-ghost btn-sm" onClick={onLogout}>Sign Out</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── SIDEBAR ───────────────────────────────────────────────────────────────────
+function Sidebar({view,setView,data,company,session,onSwitchCompany,onLogout}){
+  const nav=[
+    {id:'dashboard',icon:I.dash,label:'Dashboard'},
+    {id:'contacts',icon:I.contacts,label:'Contacts',count:data.contacts?.length},
+    {id:'deals',icon:I.deals,label:'Pipeline',count:data.deals?.filter(d=>d.stage!=='Closed Won'&&d.stage!=='Closed Lost').length},
+    {id:'tasks',icon:I.tasks,label:'Tasks',count:data.tasks?.filter(t=>!t.done).length},
+    {id:'companies',icon:I.companies,label:'Accounts',count:data.companies?.length},
+    {id:'activities',icon:I.activities,label:'Activities'},
+    {id:'settings',icon:I.settings,label:'Settings'},
+  ];
+  return(
+    <div className="sidebar">
+      <div className="sidebar-logo"><span>MrPress <em>CRM</em></span></div>
+      <div className="company-switcher" onClick={onSwitchCompany}>
+        <div className="company-label">WORKSPACE</div>
+        <div className="company-name">{company}</div>
+      </div>
+      <div className="nav-section">
+        {nav.map(n=>(
+          <div key={n.id} className={`nav-item${view===n.id?' active':''}`} onClick={()=>setView(n.id)}>
+            <span className="nav-icon">{n.icon}</span>
+            <span>{n.label}</span>
+            {n.count>0&&<span className="nav-count">{n.count}</span>}
+          </div>
+        ))}
+      </div>
+      <div style={{marginTop:'auto',borderTop:'1px solid var(--border)',padding:'12px 10px'}}>
+        <div className="nav-item" onClick={onLogout}><span className="nav-icon">{I.logout}</span><span>Sign Out</span></div>
+      </div>
+    </div>
+  );
+}
+
+// ── VIEWS ─────────────────────────────────────────────────────────────────────
+function Views({view,data,update}){
+  switch(view){
+    case'dashboard':return<Dashboard data={data}/>;
+    case'contacts':return<Contacts data={data} update={update}/>;
+    case'deals':return<Deals data={data} update={update}/>;
+    case'tasks':return<Tasks data={data} update={update}/>;
+    case'companies':return<AccountsView data={data} update={update}/>;
+    case'activities':return<Activities data={data} update={update}/>;
+    case'settings':return<Settings data={data} update={update}/>;
+    default:return null;
+  }
+}
+
+// ── DASHBOARD ─────────────────────────────────────────────────────────────────
+function Dashboard({data}){
+  const openDeals=data.deals?.filter(d=>d.stage!=='Closed Won'&&d.stage!=='Closed Lost')||[];
+  const pipeline=openDeals.reduce((s,d)=>s+Number(d.value||0),0);
+  const wonDeals=data.deals?.filter(d=>d.stage==='Closed Won')||[];
+  const revenue=wonDeals.reduce((s,d)=>s+Number(d.value||0),0);
+  const overdue=data.tasks?.filter(t=>!t.done&&t.due&&new Date(t.due)<new Date())||[];
+  const recentActs=([...(data.activities||[])].sort((a,b)=>b.date-a.date)).slice(0,5);
+
+  return(
+    <div>
+      <div className="grid-4" style={{marginBottom:24}}>
+        <StatCard label="Open Deals" value={openDeals.length} color="var(--accent)"/>
+        <StatCard label="Pipeline Value" value={fmtMoney(pipeline)} color="var(--purple)"/>
+        <StatCard label="Won Revenue" value={fmtMoney(revenue)} color="var(--green)"/>
+        <StatCard label="Overdue Tasks" value={overdue.length} color={overdue.length?'var(--red)':'var(--green)'}/>
+      </div>
+      <div className="grid-2">
+        <div className="card">
+          <div style={{fontWeight:600,marginBottom:14}}>Recent Activity</div>
+          {recentActs.length===0?<div style={{color:'var(--text3)',fontSize:13}}>No activity yet. Log calls, emails and meetings.</div>:
+          recentActs.map(a=>(
+            <div key={a.id} className="activity-item">
+              <div className="activity-dot" style={{background:a.type==='call'?'var(--green)':a.type==='email'?'var(--accent)':a.type==='meeting'?'var(--purple)':'var(--text3)'}}/>
+              <div>
+                <div style={{fontSize:13,fontWeight:500}}>{a.subject}</div>
+                <div style={{fontSize:12,color:'var(--text3)'}}>{a.contactName} · {fmtDate(a.date)}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="card">
+          <div style={{fontWeight:600,marginBottom:14}}>Upcoming Tasks</div>
+          {(data.tasks||[]).filter(t=>!t.done).slice(0,6).map(t=>(
+            <div key={t.id} style={{display:'flex',alignItems:'center',gap:10,padding:'8px 0',borderBottom:'1px solid var(--border)'}}>
+              <div style={{width:8,height:8,borderRadius:'50%',background:t.due&&new Date(t.due)<new Date()?'var(--red)':'var(--text3)',flexShrink:0}}/>
+              <div style={{flex:1,fontSize:13,fontWeight:500}}>{t.title}</div>
+              <div style={{fontSize:12,color:'var(--text3)'}}>{fmtDate(t.due)}</div>
+            </div>
+          ))}
+          {(data.tasks||[]).filter(t=>!t.done).length===0&&<div style={{color:'var(--text3)',fontSize:13}}>No open tasks.</div>}
+        </div>
+      </div>
+    </div>
+  );
+}
+function StatCard({label,value,color}){
+  return(
+    <div className="stat-card">
+      <div className="stat-label">{label}</div>
+      <div className="stat-val" style={{color}}>{value}</div>
+    </div>
+  );
+}
+
+// ── CONTACTS ─────────────────────────────────────────────────────────────────
+function Contacts({data,update}){
+  const[search,setSearch]=useState('');
+  const[modal,setModal]=useState(null);
+  const[detail,setDetail]=useState(null);
+  const contacts=data.contacts||[];
+  const filtered=contacts.filter(c=>(c.name+c.email+c.company).toLowerCase().includes(search.toLowerCase()));
+
+  const save=form=>{
+    update(d=>{
+      if(form.id){const i=d.contacts.findIndex(c=>c.id===form.id);if(i>=0)d.contacts[i]=form;}
+      else{d.contacts=[...(d.contacts||[]),{...form,id:uid(),created:Date.now()}];}
+    });
+    setModal(null);
+  };
+  const del=id=>update(d=>{d.contacts=d.contacts.filter(c=>c.id!==id)});
+
+  if(detail){
+    const c=contacts.find(x=>x.id===detail);
+    if(!c){setDetail(null);return null;}
+    const acts=(data.activities||[]).filter(a=>a.contactId===c.id).sort((a,b)=>b.date-a.date);
+    return(
+      <div>
+        <button className="btn-ghost btn-sm" style={{marginBottom:16}} onClick={()=>setDetail(null)}>← Back</button>
+        <div className="card" style={{marginBottom:16}}>
+          <div style={{display:'flex',alignItems:'center',gap:16,marginBottom:16}}>
+            <div className="avatar" style={{width:52,height:52,fontSize:18,background:avatarBg(c.name)}}>{initials(c.name)}</div>
+            <div>
+              <div style={{fontSize:20,fontWeight:600,fontFamily:'Space Grotesk'}}>{c.name}</div>
+              <div style={{fontSize:13,color:'var(--text3)'}}>{c.title}{c.title&&c.company?' · ':''}{c.company}</div>
+            </div>
+            <div style={{marginLeft:'auto',display:'flex',gap:8}}>
+              <button className="btn-ghost btn-sm" onClick={()=>setModal(c)}>{I.edit} Edit</button>
+              <button className="btn-danger btn-sm" onClick={()=>{del(c.id);setDetail(null)}}>{I.del}</button>
+            </div>
+          </div>
+          <div className="detail-grid">
+            <DetailField label="Email" value={c.email}/>
+            <DetailField label="Phone" value={c.phone}/>
+            <DetailField label="Lead Source" value={c.source}/>
+            <DetailField label="Status" value={c.status}/>
+            <DetailField label="Location" value={c.location}/>
+            <DetailField label="Added" value={fmtDate(c.created)}/>
+          </div>
+          {c.notes&&<div><div style={{fontSize:12,color:'var(--text3)',marginBottom:4}}>NOTES</div><div style={{fontSize:13,lineHeight:1.6}}>{c.notes}</div></div>}
+        </div>
+        <div className="card">
+          <div style={{fontWeight:600,marginBottom:12}}>Activity History</div>
+          {acts.length===0?<div style={{color:'var(--text3)',fontSize:13}}>No activities logged.</div>:
+          acts.map(a=>(
+            <div key={a.id} className="activity-item">
+              <div className="activity-dot" style={{background:a.type==='call'?'var(--green)':a.type==='email'?'var(--accent)':'var(--purple)'}}/>
+              <div>
+                <div style={{fontSize:13,fontWeight:500}}>{a.subject}</div>
+                <div style={{fontSize:12,color:'var(--text3)'}}>{a.type} · {fmtDate(a.date)}</div>
+                {a.notes&&<div style={{fontSize:12,color:'var(--text2)',marginTop:3}}>{a.notes}</div>}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  return(
+    <div>
+      <div style={{display:'flex',gap:12,marginBottom:20,alignItems:'center'}}>
+        <div className="search-bar" style={{flex:1}}>
+          <span style={{fontSize:14}}>{I.search}</span>
+          <input placeholder="Search contacts…" value={search} onChange={e=>setSearch(e.target.value)}/>
+        </div>
+        <button className="btn-primary" onClick={()=>setModal({})}>+ Add Contact</button>
+      </div>
+      <div className="table-wrap">
+        <table>
+          <thead><tr><th>Name</th><th>Company</th><th>Email</th><th>Status</th><th>Added</th><th></th></tr></thead>
+          <tbody>
+            {filtered.length===0&&<tr><td colSpan={6}><div className="empty-state"><div className="icon">{I.contacts}</div><div>No contacts yet</div><p>Add your first contact to get started</p></div></td></tr>}
+            {filtered.map(c=>(
+              <tr key={c.id} style={{cursor:'pointer'}} onClick={()=>setDetail(c.id)}>
+                <td><div style={{display:'flex',alignItems:'center',gap:10}}><div className="avatar" style={{background:avatarBg(c.name)}}>{initials(c.name)}</div><span style={{fontWeight:500}}>{c.name}</span></div></td>
+                <td style={{color:'var(--text2)'}}>{c.company||'—'}</td>
+                <td style={{color:'var(--text2)'}}>{c.email||'—'}</td>
+                <td>{c.status?<span className={`badge badge-${c.status==='Active'?'green':c.status==='Lead'?'blue':'amber'}`}>{c.status}</span>:'—'}</td>
+                <td style={{color:'var(--text3)',fontSize:13}}>{fmtDate(c.created)}</td>
+                <td onClick={e=>e.stopPropagation()}><button className="btn-ghost btn-sm" onClick={()=>setModal(c)}>{I.edit}</button></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {modal&&<ContactModal initial={modal} contacts={data.contacts||[]} companies={data.companies||[]} onSave={save} onClose={()=>setModal(null)}/>}
+    </div>
+  );
+}
+function DetailField({label,value}){
+  return<div className="detail-field"><div className="field-label">{label}</div><div className="field-value">{value||'—'}</div></div>;
+}
+function ContactModal({initial,companies,onSave,onClose}){
+  const[f,setF]=useState({name:'',email:'',phone:'',company:'',title:'',status:'Lead',source:'',location:'',notes:'',...initial});
+  const set=k=>e=>setF(p=>({...p,[k]:e.target.value}));
+  return(
+    <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="modal">
+        <div className="modal-title">{f.id?'Edit Contact':'New Contact'}</div>
+        <div className="grid-2">
+          <div className="form-group"><label>Full Name *</label><input value={f.name} onChange={set('name')}/></div>
+          <div className="form-group"><label>Email</label><input type="email" value={f.email} onChange={set('email')}/></div>
+          <div className="form-group"><label>Phone</label><input value={f.phone} onChange={set('phone')}/></div>
+          <div className="form-group"><label>Company</label>
+            <select value={f.company} onChange={set('company')}><option value="">None</option>{companies.map(c=><option key={c.id} value={c.name}>{c.name}</option>)}</select>
+          </div>
+          <div className="form-group"><label>Job Title</label><input value={f.title} onChange={set('title')}/></div>
+          <div className="form-group"><label>Status</label>
+            <select value={f.status} onChange={set('status')}><option>Lead</option><option>Active</option><option>Inactive</option><option>Customer</option></select>
+          </div>
+          <div className="form-group"><label>Lead Source</label>
+            <select value={f.source} onChange={set('source')}><option value="">—</option><option>Website</option><option>Referral</option><option>LinkedIn</option><option>Cold Outreach</option><option>Event</option><option>Other</option></select>
+          </div>
+          <div className="form-group"><label>Location</label><input value={f.location} onChange={set('location')}/></div>
+        </div>
+        <div className="form-group"><label>Notes</label><textarea rows={3} value={f.notes} onChange={set('notes')}/></div>
+        <div className="modal-footer">
+          <button className="btn-ghost" onClick={onClose}>Cancel</button>
+          <button className="btn-primary" onClick={()=>f.name&&onSave(f)} disabled={!f.name}>Save Contact</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── DEALS / PIPELINE ──────────────────────────────────────────────────────────
+function Deals({data,update}){
+  const[modal,setModal]=useState(null);
+  const deals=data.deals||[];
+  const contacts=data.contacts||[];
+
+  const save=form=>{
+    update(d=>{
+      if(form.id){const i=d.deals.findIndex(x=>x.id===form.id);if(i>=0)d.deals[i]=form;}
+      else d.deals=[...(d.deals||[]),{...form,id:uid(),created:Date.now()}];
+    });setModal(null);
+  };
+  const move=(id,stage)=>update(d=>{const i=d.deals.findIndex(x=>x.id===id);if(i>=0)d.deals[i].stage=stage;});
+  const del=id=>update(d=>{d.deals=d.deals.filter(x=>x.id!==id)});
+
+  return(
+    <div>
+      <div style={{display:'flex',justifyContent:'flex-end',marginBottom:20}}>
+        <button className="btn-primary" onClick={()=>setModal({})}>+ Add Deal</button>
+      </div>
+      <div className="pipeline-board">
+        {STAGES.map(stage=>{
+          const cols=deals.filter(d=>d.stage===stage);
+          const total=cols.reduce((s,d)=>s+Number(d.value||0),0);
+          return(
+            <div key={stage} className="pipeline-col">
+              <div className="pipeline-header">
+                <span>{stage}</span>
+                <span className={`badge badge-${STAGE_COLORS[stage]}`}>{cols.length}</span>
+              </div>
+              {total>0&&<div style={{fontSize:12,color:'var(--text3)',padding:'0 4px',marginTop:-4,marginBottom:4}}>{fmtMoney(total)}</div>}
+              {cols.map(d=>(
+                <div key={d.id} className="deal-card">
+                  <div className="deal-title">{d.title}</div>
+                  <div className="deal-meta">
+                    {d.value&&<span style={{color:'var(--green)',fontWeight:600}}>{fmtMoney(d.value)}</span>}
+                    {d.contactName&&<span>{d.contactName}</span>}
+                  </div>
+                  {d.close&&<div style={{fontSize:12,color:'var(--text3)',marginTop:4}}>Close: {fmtDate(d.close)}</div>}
+                  <div style={{display:'flex',gap:6,marginTop:8,flexWrap:'wrap'}}>
+                    {STAGES.filter(s=>s!==stage).map(s=><button key={s} className="btn-ghost btn-sm" style={{fontSize:11,padding:'3px 8px'}} onClick={()=>move(d.id,s)}>→{s.slice(0,4)}</button>)}
+                  </div>
+                  <div style={{display:'flex',gap:6,marginTop:6}}>
+                    <button className="btn-ghost btn-sm" onClick={()=>setModal(d)}>{I.edit}</button>
+                    <button className="btn-danger btn-sm" onClick={()=>del(d.id)}>{I.del}</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          );
+        })}
+      </div>
+      {modal&&<DealModal initial={modal} contacts={contacts} onSave={save} onClose={()=>setModal(null)}/>}
+    </div>
+  );
+}
+function DealModal({initial,contacts,onSave,onClose}){
+  const[f,setF]=useState({title:'',value:'',stage:'Lead',contactId:'',contactName:'',close:'',notes:'',probability:50,...initial});
+  const set=k=>e=>setF(p=>({...p,[k]:e.target.value}));
+  const pickContact=e=>{
+    const c=contacts.find(x=>x.id===e.target.value);
+    setF(p=>({...p,contactId:e.target.value,contactName:c?c.name:''}));
+  };
+  return(
+    <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="modal">
+        <div className="modal-title">{f.id?'Edit Deal':'New Deal'}</div>
+        <div className="grid-2">
+          <div className="form-group" style={{gridColumn:'1/-1'}}><label>Deal Title *</label><input value={f.title} onChange={set('title')}/></div>
+          <div className="form-group"><label>Value ($)</label><input type="number" value={f.value} onChange={set('value')}/></div>
+          <div className="form-group"><label>Stage</label>
+            <select value={f.stage} onChange={set('stage')}>{STAGES.map(s=><option key={s}>{s}</option>)}</select>
+          </div>
+          <div className="form-group"><label>Contact</label>
+            <select value={f.contactId} onChange={pickContact}><option value="">None</option>{contacts.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select>
+          </div>
+          <div className="form-group"><label>Expected Close</label><input type="date" value={f.close} onChange={set('close')}/></div>
+          <div className="form-group"><label>Probability %</label><input type="number" min={0} max={100} value={f.probability} onChange={set('probability')}/></div>
+        </div>
+        <div className="form-group"><label>Notes</label><textarea rows={3} value={f.notes} onChange={set('notes')}/></div>
+        <div className="modal-footer">
+          <button className="btn-ghost" onClick={onClose}>Cancel</button>
+          <button className="btn-primary" onClick={()=>f.title&&onSave(f)} disabled={!f.title}>Save Deal</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── TASKS ─────────────────────────────────────────────────────────────────────
+function Tasks({data,update}){
+  const[modal,setModal]=useState(null);
+  const[filter,setFilter]=useState('open');
+  const tasks=data.tasks||[];
+  const filtered=tasks.filter(t=>filter==='all'?true:filter==='open'?!t.done:t.done);
+
+  const save=form=>{
+    update(d=>{
+      if(form.id){const i=d.tasks.findIndex(x=>x.id===form.id);if(i>=0)d.tasks[i]=form;}
+      else d.tasks=[...(d.tasks||[]),{...form,id:uid(),created:Date.now()}];
+    });setModal(null);
+  };
+  const toggle=id=>update(d=>{const i=d.tasks.findIndex(x=>x.id===id);if(i>=0)d.tasks[i].done=!d.tasks[i].done;});
+  const del=id=>update(d=>{d.tasks=d.tasks.filter(x=>x.id!==id)});
+
+  return(
+    <div>
+      <div style={{display:'flex',gap:12,marginBottom:20,alignItems:'center'}}>
+        <div className="tab-bar" style={{marginBottom:0,width:'auto'}}>
+          {['open','done','all'].map(f=><div key={f} className={`tab${filter===f?' active':''}`} style={{padding:'6px 16px'}} onClick={()=>setFilter(f)}>{f==='open'?`Open (${tasks.filter(t=>!t.done).length})`:f==='done'?'Done':'All'}</div>)}
+        </div>
+        <button className="btn-primary" style={{marginLeft:'auto'}} onClick={()=>setModal({})}>+ Add Task</button>
+      </div>
+      <div className="table-wrap">
+        <table>
+          <thead><tr><th>Done</th><th>Task</th><th>Assigned To</th><th>Due Date</th><th>Priority</th><th></th></tr></thead>
+          <tbody>
+            {filtered.length===0&&<tr><td colSpan={6}><div className="empty-state"><div className="icon">{I.tasks}</div><div>No tasks</div></div></td></tr>}
+            {filtered.map(t=>(
+              <tr key={t.id} style={{opacity:t.done?0.5:1}}>
+                <td><input type="checkbox" checked={!!t.done} onChange={()=>toggle(t.id)} style={{width:16,cursor:'pointer'}}/></td>
+                <td><div style={{fontWeight:500,textDecoration:t.done?'line-through':'none'}}>{t.title}</div>{t.notes&&<div style={{fontSize:12,color:'var(--text3)'}}>{t.notes}</div>}</td>
+                <td style={{color:'var(--text2)'}}>{t.assigned||'—'}</td>
+                <td style={{color:t.due&&new Date(t.due)<new Date()&&!t.done?'var(--red)':'var(--text2)'}}>{fmtDate(t.due)}</td>
+                <td>{t.priority&&<span className={`badge badge-${t.priority==='High'?'red':t.priority==='Medium'?'amber':'blue'}`}>{t.priority}</span>}</td>
+                <td><div style={{display:'flex',gap:6}}><button className="btn-ghost btn-sm" onClick={()=>setModal(t)}>{I.edit}</button><button className="btn-danger btn-sm" onClick={()=>del(t.id)}>{I.del}</button></div></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {modal&&<TaskModal initial={modal} contacts={data.contacts||[]} onSave={save} onClose={()=>setModal(null)}/>}
+    </div>
+  );
+}
+function TaskModal({initial,contacts,onSave,onClose}){
+  const[f,setF]=useState({title:'',due:'',priority:'Medium',assigned:'',contactId:'',notes:'',...initial});
+  const set=k=>e=>setF(p=>({...p,[k]:e.target.value}));
+  return(
+    <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="modal">
+        <div className="modal-title">{f.id?'Edit Task':'New Task'}</div>
+        <div className="grid-2">
+          <div className="form-group" style={{gridColumn:'1/-1'}}><label>Task Title *</label><input value={f.title} onChange={set('title')}/></div>
+          <div className="form-group"><label>Due Date</label><input type="date" value={f.due} onChange={set('due')}/></div>
+          <div className="form-group"><label>Priority</label>
+            <select value={f.priority} onChange={set('priority')}><option>Low</option><option>Medium</option><option>High</option></select>
+          </div>
+          <div className="form-group"><label>Assigned To</label><input value={f.assigned} onChange={set('assigned')}/></div>
+          <div className="form-group"><label>Related Contact</label>
+            <select value={f.contactId} onChange={set('contactId')}><option value="">None</option>{contacts.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select>
+          </div>
+        </div>
+        <div className="form-group"><label>Notes</label><textarea rows={2} value={f.notes} onChange={set('notes')}/></div>
+        <div className="modal-footer">
+          <button className="btn-ghost" onClick={onClose}>Cancel</button>
+          <button className="btn-primary" onClick={()=>f.title&&onSave(f)} disabled={!f.title}>Save Task</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── ACCOUNTS (Companies list inside a company workspace) ──────────────────────
+function AccountsView({data,update}){
+  const[modal,setModal]=useState(null);
+  const companies=data.companies||[];
+
+  const save=form=>{
+    update(d=>{
+      if(form.id){const i=d.companies.findIndex(x=>x.id===form.id);if(i>=0)d.companies[i]=form;}
+      else d.companies=[...(d.companies||[]),{...form,id:uid(),created:Date.now()}];
+    });setModal(null);
+  };
+  const del=id=>update(d=>{d.companies=d.companies.filter(x=>x.id!==id)});
+
+  return(
+    <div>
+      <div style={{display:'flex',justifyContent:'flex-end',marginBottom:20}}>
+        <button className="btn-primary" onClick={()=>setModal({})}>+ Add Account</button>
+      </div>
+      <div className="table-wrap">
+        <table>
+          <thead><tr><th>Company</th><th>Industry</th><th>Website</th><th>Phone</th><th>Size</th><th></th></tr></thead>
+          <tbody>
+            {companies.length===0&&<tr><td colSpan={6}><div className="empty-state"><div className="icon">{I.companies}</div><div>No accounts yet</div></div></td></tr>}
+            {companies.map(c=>(
+              <tr key={c.id}>
+                <td><div style={{display:'flex',alignItems:'center',gap:10}}><div className="avatar" style={{background:avatarBg(c.name),borderRadius:8}}>{initials(c.name)}</div><div><div style={{fontWeight:500}}>{c.name}</div>{c.location&&<div style={{fontSize:12,color:'var(--text3)'}}>{c.location}</div>}</div></div></td>
+                <td style={{color:'var(--text2)'}}>{c.industry||'—'}</td>
+                <td>{c.website?<a href={c.website} target="_blank" style={{color:'var(--accent)',fontSize:13}}>{c.website.replace(/https?:\/\//,'')}</a>:'—'}</td>
+                <td style={{color:'var(--text2)'}}>{c.phone||'—'}</td>
+                <td style={{color:'var(--text2)'}}>{c.size||'—'}</td>
+                <td><div style={{display:'flex',gap:6}}><button className="btn-ghost btn-sm" onClick={()=>setModal(c)}>{I.edit}</button><button className="btn-danger btn-sm" onClick={()=>del(c.id)}>{I.del}</button></div></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {modal&&<AccountModal initial={modal} onSave={save} onClose={()=>setModal(null)}/>}
+    </div>
+  );
+}
+function AccountModal({initial,onSave,onClose}){
+  const[f,setF]=useState({name:'',industry:'',website:'',phone:'',size:'',location:'',notes:'',...initial});
+  const set=k=>e=>setF(p=>({...p,[k]:e.target.value}));
+  return(
+    <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="modal">
+        <div className="modal-title">{f.id?'Edit Account':'New Account'}</div>
+        <div className="grid-2">
+          <div className="form-group" style={{gridColumn:'1/-1'}}><label>Company Name *</label><input value={f.name} onChange={set('name')}/></div>
+          <div className="form-group"><label>Industry</label><input value={f.industry} onChange={set('industry')}/></div>
+          <div className="form-group"><label>Company Size</label>
+            <select value={f.size} onChange={set('size')}><option value="">—</option><option>1-10</option><option>11-50</option><option>51-200</option><option>201-500</option><option>500+</option></select>
+          </div>
+          <div className="form-group"><label>Website</label><input placeholder="https://…" value={f.website} onChange={set('website')}/></div>
+          <div className="form-group"><label>Phone</label><input value={f.phone} onChange={set('phone')}/></div>
+          <div className="form-group" style={{gridColumn:'1/-1'}}><label>Location</label><input value={f.location} onChange={set('location')}/></div>
+        </div>
+        <div className="form-group"><label>Notes</label><textarea rows={3} value={f.notes} onChange={set('notes')}/></div>
+        <div className="modal-footer">
+          <button className="btn-ghost" onClick={onClose}>Cancel</button>
+          <button className="btn-primary" onClick={()=>f.name&&onSave(f)} disabled={!f.name}>Save Account</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── ACTIVITIES ────────────────────────────────────────────────────────────────
+function Activities({data,update}){
+  const[modal,setModal]=useState(null);
+  const acts=[...(data.activities||[])].sort((a,b)=>b.date-a.date);
+
+  const save=form=>{
+    update(d=>{
+      if(form.id){const i=d.activities.findIndex(x=>x.id===form.id);if(i>=0)d.activities[i]=form;}
+      else d.activities=[...(d.activities||[]),{...form,id:uid(),date:form.date||Date.now()}];
+    });setModal(null);
+  };
+  const del=id=>update(d=>{d.activities=d.activities.filter(x=>x.id!==id)});
+
+  const typeIcon={call:'📞',email:'📧',meeting:'📅',note:'📝'};
+  const typeColor={call:'var(--green)',email:'var(--accent)',meeting:'var(--purple)',note:'var(--amber)'};
+
+  return(
+    <div>
+      <div style={{display:'flex',justifyContent:'flex-end',marginBottom:20}}>
+        <button className="btn-primary" onClick={()=>setModal({})}>+ Log Activity</button>
+      </div>
+      <div className="card">
+        {acts.length===0&&<div className="empty-state"><div className="icon">{I.activities}</div><div>No activities logged</div><p>Log calls, emails, meetings and notes</p></div>}
+        {acts.map(a=>(
+          <div key={a.id} className="activity-item">
+            <div style={{width:32,height:32,borderRadius:8,background:typeColor[a.type]+'22',display:'flex',alignItems:'center',justifyContent:'center',fontSize:16,flexShrink:0}}>{typeIcon[a.type]||'📋'}</div>
+            <div style={{flex:1}}>
+              <div style={{display:'flex',alignItems:'center',gap:8}}>
+                <span style={{fontWeight:500}}>{a.subject}</span>
+                <span className={`badge badge-${a.type==='call'?'green':a.type==='email'?'blue':a.type==='meeting'?'purple':'amber'}`} style={{fontSize:11}}>{a.type}</span>
+              </div>
+              <div style={{fontSize:12,color:'var(--text3)',marginTop:2}}>{a.contactName||'—'} · {fmtDate(a.date)}{a.duration?` · ${a.duration} min`:''}</div>
+              {a.notes&&<div style={{fontSize:13,color:'var(--text2)',marginTop:4,lineHeight:1.5}}>{a.notes}</div>}
+            </div>
+            <div style={{display:'flex',gap:6}}><button className="btn-ghost btn-sm" onClick={()=>setModal(a)}>{I.edit}</button><button className="btn-danger btn-sm" onClick={()=>del(a.id)}>{I.del}</button></div>
+          </div>
+        ))}
+      </div>
+      {modal&&<ActivityModal initial={modal} contacts={data.contacts||[]} onSave={save} onClose={()=>setModal(null)}/>}
+    </div>
+  );
+}
+function ActivityModal({initial,contacts,onSave,onClose}){
+  const[f,setF]=useState({type:'call',subject:'',contactId:'',contactName:'',date:new Date().toISOString().split('T')[0],duration:'',notes:'',...initial,date:initial.date?new Date(initial.date).toISOString().split('T')[0]:new Date().toISOString().split('T')[0]});
+  const set=k=>e=>setF(p=>({...p,[k]:e.target.value}));
+  const pickContact=e=>{
+    const c=contacts.find(x=>x.id===e.target.value);
+    setF(p=>({...p,contactId:e.target.value,contactName:c?c.name:''}));
+  };
+  return(
+    <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="modal">
+        <div className="modal-title">{f.id?'Edit Activity':'Log Activity'}</div>
+        <div className="grid-2">
+          <div className="form-group"><label>Type</label>
+            <select value={f.type} onChange={set('type')}><option value="call">Call</option><option value="email">Email</option><option value="meeting">Meeting</option><option value="note">Note</option></select>
+          </div>
+          <div className="form-group"><label>Date</label><input type="date" value={f.date} onChange={set('date')}/></div>
+          <div className="form-group" style={{gridColumn:'1/-1'}}><label>Subject *</label><input value={f.subject} onChange={set('subject')}/></div>
+          <div className="form-group"><label>Contact</label>
+            <select value={f.contactId} onChange={pickContact}><option value="">None</option>{contacts.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select>
+          </div>
+          <div className="form-group"><label>Duration (min)</label><input type="number" value={f.duration} onChange={set('duration')}/></div>
+        </div>
+        <div className="form-group"><label>Notes</label><textarea rows={4} value={f.notes} onChange={set('notes')}/></div>
+        <div className="modal-footer">
+          <button className="btn-ghost" onClick={onClose}>Cancel</button>
+          <button className="btn-primary" onClick={()=>f.subject&&onSave({...f,date:new Date(f.date).getTime()||Date.now()})} disabled={!f.subject}>Save Activity</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── SETTINGS ──────────────────────────────────────────────────────────────────
+function Settings({data,update}){
+  const[form,setForm]=useState({companyName:data.settings?.companyName||'',currency:data.settings?.currency||'USD'});
+  const[saved,setSaved]=useState(false);
+  const set=k=>e=>setForm(p=>({...p,[k]:e.target.value}));
+  const save=()=>{update(d=>{d.settings={...d.settings,...form}});setSaved(true);setTimeout(()=>setSaved(false),2000)};
+  return(
+    <div style={{maxWidth:520}}>
+      <div className="card" style={{marginBottom:16}}>
+        <div style={{fontWeight:600,marginBottom:16}}>Workspace Settings</div>
+        <div className="form-group"><label>Workspace Display Name</label><input value={form.companyName} onChange={set('companyName')}/></div>
+        <div className="form-group"><label>Currency</label>
+          <select value={form.currency} onChange={set('currency')}>
+            <option value="USD">USD ($)</option><option value="EUR">EUR (€)</option><option value="GBP">GBP (£)</option><option value="CAD">CAD</option><option value="AUD">AUD</option>
+          </select>
+        </div>
+        <button className="btn-primary" onClick={save}>{saved?'Saved ✓':'Save Settings'}</button>
+      </div>
+      <div className="card">
+        <div style={{fontWeight:600,marginBottom:8}}>About MrPress CRM</div>
+        <div style={{fontSize:13,color:'var(--text3)',lineHeight:1.7}}>
+          <p>Your CRM data is encrypted with AES-256-GCM before being stored in your private GitHub repository. Nobody — not even GitHub — can read your data without your encryption password.</p>
+          <div className="divider"/>
+          <p><strong style={{color:'var(--text2)'}}>Total contacts:</strong> {data.contacts?.length||0}</p>
+          <p><strong style={{color:'var(--text2)'}}>Total deals:</strong> {data.deals?.length||0}</p>
+          <p><strong style={{color:'var(--text2)'}}>Total tasks:</strong> {data.tasks?.length||0}</p>
+          <p><strong style={{color:'var(--text2)'}}>Activities logged:</strong> {data.activities?.length||0}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
