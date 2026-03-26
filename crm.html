@@ -165,8 +165,43 @@ async function getFile(token,owner,repo,path){
   catch(e){if(e.message.includes('404')||e.message.includes('Not Found'))return null;throw e}
 }
 async function putFile(token,owner,repo,path,content,sha){
-  return ghRequest(token,'PUT',`/repos/${owner}/${repo}/contents/${path}`,{message:`VaultCRM update ${new Date().toISOString()}`,content:btoa(unescape(encodeURIComponent(content))),sha:sha||undefined});
+  return ghRequest(token,'PUT',`/repos/${owner}/${repo}/contents/${path}`,{message:`MrPress CRM update ${new Date().toISOString()}`,content:btoa(unescape(encodeURIComponent(content))),sha:sha||undefined});
 }
+// ── AUTH HELPERS ─────────────────────────────────────────────────────────────
+// auth.enc stores: { users: [{username, passwordHash, token, owner, repo, encPassword}] }
+// The file itself is encrypted with AUTH_MASTER derived from username+password
+async function hashPassword(password){
+  const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode('mrpress-pw-v1:'+password));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+async function authFileKey(username,password){
+  // Key for the auth.enc file is derived from username+password combo
+  return deriveKey(username+':'+password,'mrpress-auth-salt-v1');
+}
+async function encryptAuth(data,username,password){
+  const key=await authFileKey(username,password);
+  const iv=crypto.getRandomValues(new Uint8Array(12));
+  const ct=await crypto.subtle.encrypt({name:'AES-GCM',iv},key,new TextEncoder().encode(JSON.stringify(data)));
+  const combined=new Uint8Array(iv.length+ct.byteLength);
+  combined.set(iv);combined.set(new Uint8Array(ct),iv.length);
+  return btoa(String.fromCharCode(...combined));
+}
+async function decryptAuth(b64,username,password){
+  const bytes=Uint8Array.from(atob(b64),c=>c.charCodeAt(0));
+  const key=await authFileKey(username,password);
+  const pt=await crypto.subtle.decrypt({name:'AES-GCM',iv:bytes.slice(0,12)},key,bytes.slice(12));
+  return JSON.parse(new TextDecoder().decode(pt));
+}
+// Load auth registry — needs the ADMIN token+owner+repo on first setup only
+async function loadAuthFile(token,owner,repo){
+  const f=await getFile(token,owner,repo,'auth.enc');
+  return f?{raw:decodeURIComponent(escape(atob(f.content.replace(/\n/g,'')))),sha:f.sha}:null;
+}
+async function saveAuthFile(token,owner,repo,data,sha,adminUser,adminPass){
+  const enc=await encryptAuth(data,adminUser,adminPass);
+  return putFile(token,owner,repo,'auth.enc',enc,sha);
+}
+
 async function loadCRM(token,owner,repo,company,password){
   const f=await getFile(token,owner,repo,`crm_data/${company}.enc`);
   if(!f)return null;
@@ -273,7 +308,7 @@ function App(){
         <div className="topbar">
           <span className="page-title">{viewTitle(view)}</span>
           <div className="topbar-actions">
-            <span style={{fontSize:12,color:'var(--text3)'}}>{session.owner}/{session.repo}</span>
+            <span style={{fontSize:12,color:'var(--text3)'}}>👤 {session.username||session.owner}</span>
           </div>
         </div>
         <div className="content">
@@ -292,25 +327,121 @@ function App(){
 function viewTitle(v){return{dashboard:'Dashboard',contacts:'Contacts',deals:'Pipeline',tasks:'Tasks',companies:'Accounts',activities:'Activity Log',settings:'Settings'}[v]||v}
 
 // ── LOGIN ─────────────────────────────────────────────────────────────────────
+// tab: 'login' | 'setup'
+// Setup flow: enter GitHub details + create admin username/password → saves auth.enc
+// Login flow: enter username + password → fetches auth.enc → decrypts → gets token
 function LoginPage({onLogin}){
   const[tab,setTab]=useState('login');
-  const[form,setForm]=useState({token:'',owner:'',repo:'',password:''});
+  const[step,setStep]=useState(1); // setup has 2 steps
   const[error,setError]=useState('');
   const[loading,setLoading]=useState(false);
+  const[loadingMsg,setLoadingMsg]=useState('');
 
-  const set=k=>e=>setForm(f=>({...f,[k]:e.target.value}));
+  // Login form — pre-fill owner/repo from last bootstrap if available
+  const bootstrap=React.useMemo(()=>{try{return JSON.parse(localStorage.getItem('mrpress_bootstrap')||'null')}catch{return null}},[]);
+  const[loginForm,setLoginForm]=useState({username:'',password:'',owner:bootstrap?.owner||'',repo:bootstrap?.repo||''});
+  const setL=k=>e=>setLoginForm(f=>({...f,[k]:e.target.value}));
 
-  const submit=async()=>{
-    if(!form.token||!form.owner||!form.repo||!form.password){setError('All fields required');return}
-    setLoading(true);setError('');
+  // Setup form
+  const[setupForm,setSetupForm]=useState({token:'',owner:'',repo:'',username:'',password:'',password2:'',encPassword:''});
+  const setS=k=>e=>setSetupForm(f=>({...f,[k]:e.target.value}));
+
+  const doLogin=async()=>{
+    const{username,password,owner,repo}=loginForm;
+    if(!username||!password||!owner||!repo){setError('All fields are required');return}
+    setLoading(true);setLoadingMsg('Fetching credentials…');setError('');
     try{
-      await ghRequest(form.token,'GET',`/repos/${form.owner}/${form.repo}`);
-      if(tab==='register'){
-        try{await ghRequest(form.token,'GET',`/repos/${form.owner}/${form.repo}/contents/crm_data`)}
-        catch{await putFile(form.token,form.owner,form.repo,'crm_data/.gitkeep','',null).catch(()=>{})}
+      // We need a way to fetch auth.enc without a token — use unauthenticated GitHub contents API
+      // (works for private repos only if we have a token — so we prompt for owner/repo and fetch with no auth first)
+      // Since repo is private, we need the token. Strategy: store a public "bootstrap" token with read-only scope,
+      // OR ask user for owner/repo and derive a lookup token from username/password (not possible).
+      // Best approach for private repo: fetch auth.enc using a minimal "read token" stored in the URL hash or
+      // ask user for owner+repo and use their password to derive the auth key, then try fetching with no token
+      // using GitHub's raw URL — but private repos block unauthenticated access.
+      // SOLUTION: We store owner/repo in the login form (one-time, can be bookmarked),
+      // and the auth.enc is fetched using a PUBLIC read-only token embedded at setup time,
+      // OR we embed the owner/repo in the page URL hash for convenience.
+      // SIMPLEST: store owner+repo+a read-only bootstrap token in auth.enc's FILENAME as a public marker,
+      // but keep token encrypted. Instead: store a HASHED version of the token encrypted per-user.
+      // ACTUAL SIMPLEST: at login, we have owner+repo. We try the GitHub unauthenticated raw API.
+      // For private repos this fails. So we need SOMETHING. 
+      // Clean solution: store owner/repo/token salted-hash in localStorage from last setup,
+      // AND encrypt full token in auth.enc. At login: 
+      // 1) get bootstrap info from localStorage (owner/repo/readToken)
+      // 2) fetch auth.enc with readToken
+      // 3) decrypt user record with username+password → get their full token + encPassword
+      const bootstrap=JSON.parse(localStorage.getItem('mrpress_bootstrap')||'null');
+      if(!bootstrap||bootstrap.owner!==owner||bootstrap.repo!==repo){
+        setError('No setup found for this repo on this device. Please run First Time Setup first, or sign in on the device where you ran setup.');
+        setLoading(false);return;
       }
-      onLogin({token:form.token,owner:form.owner,repo:form.repo,password:form.password});
-    }catch(e){setError(e.message||'Could not connect to GitHub repo')}
+      setLoadingMsg('Decrypting credentials…');
+      const authFile=await loadAuthFile(bootstrap.readToken,owner,repo);
+      if(!authFile){setError('No auth file found. Please run First Time Setup.');setLoading(false);return;}
+      let authData;
+      try{authData=await decryptAuth(authFile.raw,username,password);}
+      catch{setError('Incorrect username or password.');setLoading(false);return;}
+      const user=authData.users?.find(u=>u.username===username);
+      if(!user){setError('User not found.');setLoading(false);return;}
+      const pwHash=await hashPassword(password);
+      if(user.passwordHash!==pwHash){setError('Incorrect password.');setLoading(false);return;}
+      setLoadingMsg('Signing in…');
+      onLogin({token:user.token,owner,repo,password:user.encPassword,username});
+    }catch(e){setError(e.message)}
+    setLoading(false);
+  };
+
+  const doSetupStep1=async()=>{
+    const{token,owner,repo}=setupForm;
+    if(!token||!owner||!repo){setError('All fields required');return}
+    setLoading(true);setLoadingMsg('Connecting to GitHub…');setError('');
+    try{
+      await ghRequest(token,'GET',`/repos/${owner}/${repo}`);
+      // init crm_data folder if needed
+      const existing=await getFile(token,owner,repo,'crm_data/.gitkeep');
+      if(!existing)await putFile(token,owner,repo,'crm_data/.gitkeep','',null).catch(()=>{});
+      setStep(2);
+    }catch(e){setError(e.message||'Could not connect. Check your token and repo name.')}
+    setLoading(false);
+  };
+
+  const doSetupStep2=async()=>{
+    const{token,owner,repo,username,password,password2,encPassword}=setupForm;
+    if(!username||!password||!encPassword){setError('All fields required');return}
+    if(password!==password2){setError('Passwords do not match');return}
+    if(password.length<6){setError('Password must be at least 6 characters');return}
+    if(encPassword.length<8){setError('Encryption password must be at least 8 characters');return}
+    setLoading(true);setLoadingMsg('Creating your account…');setError('');
+    try{
+      const pwHash=await hashPassword(password);
+      // Check if auth.enc already exists — load it or start fresh
+      const existing=await loadAuthFile(token,owner,repo);
+      let authData={users:[]};
+      if(existing){
+        // Try to decrypt with this user's credentials (admin adding new user would need admin pass)
+        // For simplicity: first user is admin, file encrypted with their credentials
+        // If file exists, this is "add user" — but we can't decrypt without knowing first user's pass
+        // So: each user's entry is encrypted with THEIR OWN username+password
+        // The file stores all users' entries, each independently decryptable
+        // Actually simpler: encrypt the whole file with the REPO TOKEN as part of the key
+        // → use token prefix as shared secret for the file, user password to verify identity
+        try{
+          // Try reading as the new user to check for conflicts (won't work until we know which user's key)
+          // Just overwrite with merged approach: file encrypted per-user means only that user can read their entry
+          // For multi-user: each user has their OWN auth.enc.<username> file
+          // SIMPLEST multi-user: one auth.enc per username
+          setError('An auth file already exists. To add users, sign in as admin and use User Management in Settings.');
+          setLoading(false);return;
+        }catch{}
+      }
+      authData.users=[{username,passwordHash:pwHash,token,encPassword}];
+      const sha=existing?.sha||null;
+      // Save bootstrap info to localStorage (owner, repo, readToken)
+      localStorage.setItem('mrpress_bootstrap',JSON.stringify({owner,repo,readToken:token}));
+      await saveAuthFile(token,owner,repo,authData,sha,username,password);
+      setLoadingMsg('Done! Signing in…');
+      onLogin({token,owner,repo,password:encPassword,username});
+    }catch(e){setError(e.message)}
     setLoading(false);
   };
 
@@ -323,33 +454,93 @@ function LoginPage({onLogin}){
           <p style={{fontSize:11,color:'var(--text3)',marginTop:4}}>© {new Date().getFullYear()} MrPress LLC</p>
         </div>
         <div className="tab-bar">
-          {['login','register'].map(t=><div key={t} className={`tab${tab===t?' active':''}`} onClick={()=>{setTab(t);setError('')}}>{t==='login'?'Sign In':'First Time Setup'}</div>)}
+          <div className={`tab${tab==='login'?' active':''}`} onClick={()=>{setTab('login');setError('');setStep(1)}}>Sign In</div>
+          <div className={`tab${tab==='setup'?' active':''}`} onClick={()=>{setTab('setup');setError('');setStep(1)}}>First Time Setup</div>
         </div>
         {error&&<div className="alert alert-error">{error}</div>}
-        {tab==='register'&&<div className="alert alert-info">Create a <strong>private</strong> GitHub repo first, then fill in the details below.</div>}
-        <div className="form-group">
-          <label>GitHub Personal Access Token</label>
-          <input type="password" placeholder="ghp_…" value={form.token} onChange={set('token')}/>
-          <div className="hint">Go to GitHub → Settings → Developer settings → Personal access tokens → Generate (need repo scope)</div>
-        </div>
-        <div className="grid-2">
-          <div className="form-group">
-            <label>GitHub Username</label>
-            <input placeholder="yourusername" value={form.owner} onChange={set('owner')}/>
-          </div>
-          <div className="form-group">
-            <label>Repository Name</label>
-            <input placeholder="my-crm-data" value={form.repo} onChange={set('repo')}/>
-          </div>
-        </div>
-        <div className="form-group">
-          <label>Encryption Password</label>
-          <input type="password" placeholder="Strong password — never share this!" value={form.password} onChange={set('password')}/>
-          <div className="hint">⚠ This encrypts all your data. If you forget it, data cannot be recovered.</div>
-        </div>
-        <button className="btn-primary" style={{width:'100%',padding:'11px'}} onClick={submit} disabled={loading}>
-          {loading?'Connecting…':tab==='login'?'Sign In':'Set Up & Sign In'}
-        </button>
+
+        {tab==='login'&&(
+          <>
+            <div className="alert alert-info" style={{marginBottom:14}}>
+              Sign in with the username and password you created during setup.
+            </div>
+            <div className="form-group">
+              <label>GitHub Username (repo owner)</label>
+              <input placeholder="yourusername" value={loginForm.owner} onChange={setL('owner')} onKeyDown={e=>e.key==='Enter'&&doLogin()}/>
+            </div>
+            <div className="form-group">
+              <label>Repository Name</label>
+              <input placeholder="my-crm-data" value={loginForm.repo} onChange={setL('repo')} onKeyDown={e=>e.key==='Enter'&&doLogin()}/>
+              <div className="hint">Only needed the first time on a new device — the app remembers it after that.</div>
+            </div>
+            <div className="form-group">
+              <label>Username</label>
+              <input placeholder="your CRM username" value={loginForm.username} onChange={setL('username')} onKeyDown={e=>e.key==='Enter'&&doLogin()}/>
+            </div>
+            <div className="form-group">
+              <label>Password</label>
+              <input type="password" placeholder="your CRM password" value={loginForm.password} onChange={setL('password')} onKeyDown={e=>e.key==='Enter'&&doLogin()}/>
+            </div>
+            <button className="btn-primary" style={{width:'100%',padding:11}} onClick={doLogin} disabled={loading}>
+              {loading?<span>{loadingMsg||'Signing in…'}</span>:'Sign In'}
+            </button>
+          </>
+        )}
+
+        {tab==='setup'&&step===1&&(
+          <>
+            <div className="alert alert-info">Step 1 of 2 — Connect your GitHub repo. You only do this once ever.</div>
+            <div className="form-group">
+              <label>GitHub Personal Access Token</label>
+              <input type="password" placeholder="ghp_…" value={setupForm.token} onChange={setS('token')}/>
+              <div className="hint">GitHub → Settings → Developer settings → Personal access tokens → Generate new token (check the <strong>repo</strong> scope)</div>
+            </div>
+            <div className="grid-2">
+              <div className="form-group">
+                <label>Your GitHub Username</label>
+                <input placeholder="yourusername" value={setupForm.owner} onChange={setS('owner')}/>
+              </div>
+              <div className="form-group">
+                <label>Repo Name</label>
+                <input placeholder="my-crm-data" value={setupForm.repo} onChange={setS('repo')}/>
+              </div>
+            </div>
+            <button className="btn-primary" style={{width:'100%',padding:11}} onClick={doSetupStep1} disabled={loading}>
+              {loading?loadingMsg:'Continue →'}
+            </button>
+          </>
+        )}
+
+        {tab==='setup'&&step===2&&(
+          <>
+            <div className="alert alert-info">Step 2 of 2 — Create your login credentials. After this you only need your username + password.</div>
+            <div className="grid-2">
+              <div className="form-group">
+                <label>Choose a Username</label>
+                <input placeholder="admin" value={setupForm.username} onChange={setS('username')}/>
+              </div>
+              <div className="form-group" style={{gridColumn:'1/-1'}}>
+                <label>Login Password</label>
+                <input type="password" placeholder="Used to sign in" value={setupForm.password} onChange={setS('password')}/>
+              </div>
+              <div className="form-group" style={{gridColumn:'1/-1'}}>
+                <label>Confirm Login Password</label>
+                <input type="password" placeholder="Repeat password" value={setupForm.password2} onChange={setS('password2')}/>
+              </div>
+            </div>
+            <div className="form-group">
+              <label>Data Encryption Password</label>
+              <input type="password" placeholder="Separate strong password for encrypting your CRM data" value={setupForm.encPassword} onChange={setS('encPassword')}/>
+              <div className="hint">⚠ This is separate from your login password and encrypts all CRM data. If lost, data <strong>cannot</strong> be recovered. Write it down somewhere safe.</div>
+            </div>
+            <div style={{display:'flex',gap:10}}>
+              <button className="btn-ghost" style={{flex:1}} onClick={()=>{setStep(1);setError('')}}>← Back</button>
+              <button className="btn-primary" style={{flex:2,padding:11}} onClick={doSetupStep2} disabled={loading}>
+                {loading?loadingMsg:'Create Account & Sign In'}
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
@@ -374,7 +565,7 @@ function CompanySelector({session,list,onSelect,onLogout,syncing,syncMsg}){
       <div style={{width:'100%',maxWidth:520}}>
         <div style={{textAlign:'center',marginBottom:32}}>
           <h1 style={{fontFamily:'Space Grotesk',fontSize:24,fontWeight:600}}>Select Company</h1>
-          <p style={{color:'var(--text3)',marginTop:6}}>Signed in as <strong style={{color:'var(--text2)'}}>{session.owner}</strong></p>
+          <p style={{color:'var(--text3)',marginTop:6}}>Signed in as <strong style={{color:'var(--text2)'}}>{session.username||session.owner}</strong></p>
         </div>
         {error&&<div className="alert alert-error">{error}</div>}
         {list.length>0&&(
