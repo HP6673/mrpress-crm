@@ -1,4 +1,4 @@
-LOGIN:
-admin
-admin1
+LOGIN:\n
+admin\n
+admin1\n
 yaAli_786!
